@@ -35,15 +35,15 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-purple-700/50">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt={user.name} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt={user.username} />
+                      <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.name}</p>
+                      <p className="text-sm font-medium leading-none">{user.username}</p>
                       <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                     </div>
                   </DropdownMenuLabel>
@@ -88,11 +88,11 @@ export default function Navbar() {
                 <div className="space-y-4">
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt={user.name} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt={user.username} />
+                      <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium">{user.name}</p>
+                      <p className="text-sm font-medium">{user.username}</p>
                       <p className="text-xs text-purple-200">{user.email}</p>
                     </div>
                   </div>

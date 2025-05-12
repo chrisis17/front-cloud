@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { events } from "@/data/events"
 import { Calendar, MapPin, Clock } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
@@ -13,144 +12,117 @@ import Pagination from "@/components/pagination"
 import Spinner from "@/components/spinner"
 
 export default function Home() {
-  // Estado para los eventos filtrados y paginación
-  const [allFilteredEvents, setAllFilteredEvents] = useState<typeof events>([])
-  const [displayedEvents, setDisplayedEvents] = useState<typeof events>([])
+  const [events, setEvents] = useState<any[]>([])
+  const [allFilteredEvents, setAllFilteredEvents] = useState<any[]>([])
+  const [displayedEvents, setDisplayedEvents] = useState<any[]>([])
   const [searchPerformed, setSearchPerformed] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [loading, setLoading] = useState(true) // Estado para controlar la carga
-  const eventsPerPage = 5 // Reducir a 5 eventos por página
-
-  // Referencia para el contenedor principal
+  const [loading, setLoading] = useState(true)
+  const eventsPerPage = 5
   const mainRef = useRef<HTMLElement>(null)
 
-  // Obtener todas las categorías únicas
-  const categories = Array.from(new Set(events.map((event) => event.category)))
-
-  // Ordenar eventos por fecha y configurar paginación
+  // Cargar eventos desde el endpoint
   useEffect(() => {
-    // Simular un tiempo de carga para mostrar el spinner
     setLoading(true)
-
-    const timer = setTimeout(() => {
-      const sortedEvents = [...events].sort((a, b) => {
-        const dateA = new Date(a.date)
-        const dateB = new Date(b.date)
-        return dateA.getTime() - dateB.getTime()
+    fetch("http://3.229.99.45:8080/eventos")
+      .then((res) => res.json())
+      .then((data) => {
+        const sorted = data.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+        setEvents(sorted)
+        setAllFilteredEvents(sorted)
+        setTotalPages(Math.ceil(sorted.length / eventsPerPage))
+        setLoading(false)
       })
-
-      setAllFilteredEvents(sortedEvents)
-      setTotalPages(Math.ceil(sortedEvents.length / eventsPerPage))
-      setLoading(false)
-    }, 800) // Simular carga de 800ms
-
-    return () => clearTimeout(timer)
+      .catch((error) => {
+        console.error("Error al cargar eventos:", error)
+        setLoading(false)
+      })
   }, [])
 
-  // Actualizar eventos mostrados cuando cambia la página o los eventos filtrados
   useEffect(() => {
     if (allFilteredEvents.length > 0) {
-      const startIndex = (currentPage - 1) * eventsPerPage
-      const endIndex = startIndex + eventsPerPage
-      setDisplayedEvents(allFilteredEvents.slice(startIndex, endIndex))
+      const start = (currentPage - 1) * eventsPerPage
+      const end = start + eventsPerPage
+      setDisplayedEvents(allFilteredEvents.slice(start, end))
     }
   }, [allFilteredEvents, currentPage])
 
-  // Función para manejar la búsqueda
   const handleSearch = (query: string, category: string) => {
     setSearchPerformed(true)
-    setCurrentPage(1) // Resetear a la primera página al buscar
-    setLoading(true) // Mostrar spinner durante la búsqueda
+    setCurrentPage(1)
+    setLoading(true)
 
-    // Simular tiempo de búsqueda
     setTimeout(() => {
       let results = [...events]
 
-      // Filtrar por texto de búsqueda
       if (query) {
-        const searchTerms = query.toLowerCase()
+        const search = query.toLowerCase()
         results = results.filter(
-          (event) =>
-            event.name.toLowerCase().includes(searchTerms) ||
-            event.description.toLowerCase().includes(searchTerms) ||
-            event.location.toLowerCase().includes(searchTerms) ||
-            event.venue.toLowerCase().includes(searchTerms),
+          (e) =>
+            e.nombre.toLowerCase().includes(search) ||
+            e.descripcion.toLowerCase().includes(search) ||
+            e.lugar.toLowerCase().includes(search)
         )
       }
 
-      // Filtrar por categoría
       if (category && category !== "todos") {
-        results = results.filter((event) => event.category.toLowerCase() === category.toLowerCase())
+        results = results.filter((e) => e.categoria.nombre.toLowerCase() === category.toLowerCase())
       }
 
-      // Ordenar por fecha
-      results.sort((a, b) => {
-        const dateA = new Date(a.date)
-        const dateB = new Date(b.date)
-        return dateA.getTime() - dateB.getTime()
-      })
+      results.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
 
       setAllFilteredEvents(results)
       setTotalPages(Math.ceil(results.length / eventsPerPage))
       setLoading(false)
 
-      // Desplazar al inicio de la sección de eventos
       if (mainRef.current) {
         mainRef.current.scrollIntoView({ behavior: "smooth" })
       }
     }, 500)
   }
 
-  // Modificar la función handlePageChange para quitar el desplazamiento hacia arriba
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
-    setLoading(true) // Mostrar spinner durante el cambio de página
-
-    // Simular tiempo de carga al cambiar de página
-    setTimeout(() => {
-      setLoading(false)
-      // Eliminar el desplazamiento hacia arriba al cambiar de página
-    }, 300)
+    setLoading(true)
+    setTimeout(() => setLoading(false), 300)
   }
 
-  // Obtener el evento más importante (el primero marcado como destacado)
-  const mainEvent = events.find((event) => event.featured) || events[0]
+  const mainEvent = events[0]
+
+  const categories = Array.from(new Set(events.map((e) => e.categoria.nombre)))
 
   return (
     <main className="min-h-screen bg-gray-50" ref={mainRef}>
-      {/* Sección Hero con el evento principal */}
-      <section className="relative bg-black text-white">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-900/70 to-black/70 z-10" />
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${mainEvent.image})` }} />
-        <div className="relative z-20 container mx-auto px-4 py-24 md:py-32">
-          <Badge className="mb-4 bg-purple-600 hover:bg-purple-700">{mainEvent.category}</Badge>
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">{mainEvent.name}</h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-2xl">{mainEvent.description}</p>
-          <div className="space-y-2 text-sm text-gray-200 mb-8">
-            <div className="flex items-center">
-              <Calendar className="h-5 w-5 mr-2 flex-shrink-0" />
-              <span>{formatDate(mainEvent.date)}</span>
+      {/* Hero */}
+      {mainEvent && (
+        <section className="relative bg-black text-white">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-900/70 to-black/70 z-10" />
+          <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${mainEvent.imagen})` }} />
+          <div className="relative z-20 container mx-auto px-4 py-24 md:py-32">
+            <Badge className="mb-4 bg-purple-600 hover:bg-purple-700">{mainEvent.categoria.nombre}</Badge>
+            <h1 className="text-4xl md:text-6xl font-bold mb-4">{mainEvent.nombre}</h1>
+            <p className="text-xl md:text-2xl mb-8 max-w-2xl">{mainEvent.descripcion}</p>
+            <div className="space-y-2 text-sm text-gray-200 mb-8">
+              <div className="flex items-center">
+                <Calendar className="h-5 w-5 mr-2" />
+                <span>{formatDate(mainEvent.fecha)}</span>
+              </div>
+              <div className="flex items-center">
+                <Clock className="h-5 w-5 mr-2" />
+                <span>20:00</span>
+              </div>
+              <div className="flex items-center">
+                <MapPin className="h-5 w-5 mr-2" />
+                <span>{mainEvent.lugar}</span>
+              </div>
             </div>
-            <div className="flex items-center">
-              <Clock className="h-5 w-5 mr-2 flex-shrink-0" />
-              <span>{mainEvent.time}</span>
-            </div>
-            <div className="flex items-center">
-              <MapPin className="h-5 w-5 mr-2 flex-shrink-0" />
-              <span>
-                {mainEvent.venue}, {mainEvent.location}
-              </span>
-            </div>
+            <Link href={`/events/${mainEvent.id}`} className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors inline-block">
+              Ver Detalles
+            </Link>
           </div>
-          <Link
-            href={`/events/${mainEvent.id}`}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md font-medium transition-colors inline-block"
-          >
-            Ver Detalles
-          </Link>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Buscador */}
       <section className="py-10 bg-gradient-to-b from-purple-900 to-purple-800">
@@ -159,7 +131,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Próximos Eventos */}
+      {/* Eventos */}
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold mb-12 text-center text-gray-800">
@@ -167,7 +139,6 @@ export default function Home() {
           </h2>
 
           {loading ? (
-            // Mostrar spinner mientras carga
             <div className="bg-white rounded-lg shadow-md p-8">
               <Spinner size="large" />
               <p className="text-center text-gray-600 mt-4">Cargando eventos...</p>
@@ -179,13 +150,9 @@ export default function Home() {
                 onClick={() => {
                   setLoading(true)
                   setTimeout(() => {
-                    const sortedEvents = [...events].sort((a, b) => {
-                      const dateA = new Date(a.date)
-                      const dateB = new Date(b.date)
-                      return dateA.getTime() - dateB.getTime()
-                    })
-                    setAllFilteredEvents(sortedEvents)
-                    setTotalPages(Math.ceil(sortedEvents.length / eventsPerPage))
+                    const sorted = [...events].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())
+                    setAllFilteredEvents(sorted)
+                    setTotalPages(Math.ceil(sorted.length / eventsPerPage))
                     setCurrentPage(1)
                     setSearchPerformed(false)
                     setLoading(false)
@@ -202,51 +169,41 @@ export default function Home() {
                 {displayedEvents.map((event, index) => (
                   <div key={event.id} className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
                     <div className={`grid grid-cols-1 md:grid-cols-2 ${index % 2 === 1 ? "md:flex-row-reverse" : ""}`}>
-                      <div className={`relative h-64 md:h-full ${index % 2 === 1 ? "order-first md:order-last" : ""}`}>
-                        <Image src={event.image || "/placeholder.svg"} alt={event.name} fill className="object-cover" />
+                      <div className="relative h-64 md:h-full">
+                        <Image src={event.imagen || "/placeholder.svg"} alt={event.nombre} fill className="object-cover" />
                         <div className="absolute top-4 left-4">
-                          <Badge className="bg-purple-600 hover:bg-purple-700">{event.category}</Badge>
+                          <Badge className="bg-purple-600">{event.categoria.nombre}</Badge>
                         </div>
                       </div>
-
-                      <div className="p-6 md:p-8 flex flex-col">
+                      <div className="p-6 flex flex-col justify-between">
                         <div>
-                          <h2 className="text-2xl md:text-3xl font-bold mb-2 text-gray-800">{event.name}</h2>
-
-                          <div className="space-y-2 text-sm text-gray-600 mb-4">
+                          <h2 className="text-gray-900 font-bold mb-2">{event.nombre}</h2>
+                          <p className="text-gray-600 mb-4">{event.descripcion}</p>
+                          <div className="text-sm text-gray-500 space-y-1">
                             <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
-                              <span>{formatDate(event.date)}</span>
+                              <Calendar className="h-4 w-4 mr-2" />
+                              <span>{formatDate(event.fecha)}</span>
                             </div>
                             <div className="flex items-center">
-                              <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
-                              <span>{event.time}</span>
+                              <MapPin className="h-4 w-4 mr-2" />
+                              <span>{event.lugar}</span>
                             </div>
                             <div className="flex items-center">
-                              <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
-                              <span>
-                                {event.venue}, {event.location}
-                              </span>
+                              <span className="font-semibold text-gray-700 mr-2">S/.{event.precio}</span>
                             </div>
                           </div>
-
-                          <p className="text-gray-700 mb-6">{event.description}</p>
                         </div>
-
-                        <div className="mt-auto flex items-center justify-between">
-                          <span className="font-bold text-xl text-gray-800">${event.price.toFixed(2)}</span>
-                          <Link href={`/events/${event.id}`}>
-                            <Button className="bg-purple-600 hover:bg-purple-700">Ver Detalles</Button>
-                          </Link>
-                        </div>
+                        <Link href={`/events/${event.id}`} className="mt-4 inline-block bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                          Ver Detalles
+                        </Link>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-
-              {/* Paginación */}
-              <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+              <div className="mt-12 flex justify-center">
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+              </div>
             </>
           )}
         </div>
@@ -254,3 +211,4 @@ export default function Home() {
     </main>
   )
 }
+

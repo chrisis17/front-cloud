@@ -2,9 +2,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface EventDetailsProps {
   event: {
-    id: string
-    name: string
-    description: string
+    id: number
+    nombre: string
+    descripcion: string
+    fecha: string
+    lugar: string
+    precio: number
+    imagen: string
+    categoria: {
+      id: number
+      nombre: string
+    }
     longDescription?: string
     lineup?: string[]
     schedule?: { time: string; activity: string }[]
@@ -31,8 +39,14 @@ export default function EventDetails({ event }: EventDetailsProps) {
       </TabsList>
 
       <TabsContent value="about" className="space-y-4">
-        <div className="prose max-w-none text-gray-700">
-          <p>{event.longDescription || event.description}</p>
+        <div className="prose max-w-none text-gray-700 space-y-2">
+          <p className="text-xl font-bold">{event.nombre}</p>
+          <p>{event.longDescription || event.descripcion}</p>
+          <p><strong>Fecha:</strong> {event.fecha}</p>
+          <p><strong>Lugar:</strong> {event.lugar}</p>
+          <p><strong>Precio:</strong> ${event.precio}</p>
+          <p><strong>Categoría:</strong> {event.categoria.nombre}</p>
+          <img src={event.imagen} alt={event.nombre} className="w-full max-w-md rounded-lg shadow" />
         </div>
       </TabsContent>
 
